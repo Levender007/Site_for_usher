@@ -1,0 +1,248 @@
+<div id ="EditMenu" hidden>
+    <h2 id="EditHeader"></h2>
+    <form name="EditForm" action="" method="post">
+        <input type="hidden" name="id" value="0">
+        <p>
+            <label for="FilmName">Название фильма: </label>
+            <input type="text" name="FilmName" id="FilmName" required>
+        </p>
+        <p>
+            <label for="DateTime">Дата и время: </label>
+            <input type="datetime-local" name="DateTime" id="DateTime" required>
+        </p>
+        <p>
+            <label for="Duration">Продолжительность: </label>
+            <input type="time" name="Duration" id="Duration" required>
+        </p>
+        <p>
+            <label for="Hall">Название зала: </label>
+            <select id="Hall" size="1">
+            </select>
+        </p>
+        <p>
+            <button type="submit" id="SubmitBtn">Отправить</button>
+            <button id="ResetBtn">Сбросить</button>
+            <button name="UnselectBtn" id="UnselectBtn" hidden>Снять выбор</button>
+        </p>
+    </form>
+</div>
+<form name="AddForm" action="" method="post">
+    <button type="submit" id="AddBtn">Добавить сеанс</button>
+</form>
+<table>
+    <thead><tr><th>ID</th><th>Название фильма</th><th>Дата и время</th><th>Продолжительность</th><th>Название зала</th><th>Доступно билетов</th></tr></thead>
+    <tbody></tbody>
+</table>
+
+<script>
+    const editMenu = document.getElementById("EditMenu");
+    const editHeader = document.getElementById("EditHeader");
+    const addForm = document.forms["AddForm"];
+    const form = document.forms["EditForm"];
+    const select = document.querySelector("select");
+    const tbody = document.querySelector("tbody");
+    halls = new Map();
+
+    async function GetHalls() {
+        const res = await fetch({{apiWay}} + {{apiHalls}}, {
+            method: "GET",
+            headers: {"Accept": "application/json"}
+        });
+        if (res.ok === true) {
+            const result = await res.json();
+            result.forEach(hall => {
+                halls.set(hall.get("ID"), hall.get("Name"));
+                form.elements["Hall"].options[form.elements["Hall"].options.length] = new Option(hall.get("Name"), hall.get("ID"));
+            });
+        }
+    }
+
+    async function GetSessions() {
+        const today = new Date();
+        const res = await fetch({{apiWay}} + {{apiSessions}}, {
+            method: "GET",
+            headers: { "Accept": "application/json", "Content-Type": "application/json" },
+            body: JSON.stringify({
+                curDateTime: today
+            })
+        });
+        if (res.ok === true) {
+            const sessions = await res.json();
+            sessions.forEach(session => {
+                tbody.append(row(session));
+            });
+        }
+    }
+
+    async function GetSession(id) {
+        const res = await fetch({{apiWay}} + {{apiSessions}} + id, {
+            method: "GET",
+            headers: { "Accept": "application/json" }
+        });
+        if (res.ok === true) {
+            const session = await res.json();
+
+            editHeader.textContent = "Редактирование сеанса";
+
+            form.elements["id"].value = session.get("ID");
+            form.elements["Film"].value = session.get("Film");
+            form.elements["Date"].value = session.get("Date");
+            form.elements["Duration"].value = session.get("Duration");
+            form.elements["Hall"].options.forEach(opt => {
+                if (opt.value === halls.get(session.get("HallID"))) {
+                    opt.setAttribute("selected", "selected");
+                }
+            });
+
+            addForm.hidden = true;
+            form.elements["UnselectBtn"].hidden = false;
+            editMenu.hidden = false;
+        }
+    }
+
+    async function CreateSession(film, date, duration, hallID) {
+        const res = await fetch({{apiWay}} + {{apiSessions}}, {
+            method: "POST",
+            headers: { "Accept": "application/json", "Content-Type": "application/json" },
+            body: JSON.stringify({
+                film: film,
+                date: date,
+                duration: duration,
+                hallID: hallID
+            })
+        });
+        if (res.ok === true) {
+            const session = await res.json();
+            tbody.append(row(session));
+        }
+    }
+
+    async function EditSession(id, film, date, duration, hallID) {
+        const res = await fetch({{apiWay}} + {{apiSessions}} + id, {
+            method: "PUT",
+            headers: { "Accept": "application/json", "Content-Type": "application/json" },
+            body: JSON.stringify({
+                film: film,
+                date: date,
+                duration: duration,
+                hallID: hallID
+            })
+        });
+        if (res.ok === true) {
+            const session = await res.json();
+            document.querySelector(`tr[data-rowid="${session.get("ID")}"]`).replaceWith(row(session));
+        }
+    }
+
+    async function DeleteUser(id) {
+        const res = await fetch({{apiWay}} + {{apiSessions}} + id, {
+            method: "DELETE",
+            headers: { "Accept": "application/json" }
+        });
+        if (res.ok === true) {
+            const session = await res.json();
+            document.querySelector(`tr[data-rowid="${session.get("ID")}"]`).remove();
+        }
+    }
+
+    function reset() {
+        addForm.hidden = false;
+        form.elements["UnselectBtn"].hidden = true;
+        editMenu.hidden = true;
+
+        if (form.elements["id"].value !== 0) {
+            form.elements["Hall"].options.forEach(opt => {
+                    opt.removeAttribute("selected");
+            });
+            form.elements["id"].value = 0;
+        }
+        form.reset();
+
+        editHeader.textContent = "";
+    }
+
+    function row(session) {
+        const tr = document.createElement("tr");
+        tr.setAttribute("data-rowid", session.get("ID"));
+
+        const filmTd = document.createElement("td");
+        filmTd.append(session.get("Film"));
+        tr.append(filmTd);
+
+        const dateTd = document.createElement("td");
+        dateTd.append(session.get("Date"));
+        tr.append(dateTd);
+
+        const durationTd = document.createElement("td");
+        durationTd.append(session.get("Duration"));
+        tr.append(durationTd);
+
+        const hallTd = document.createElement("td");
+        hallTd.append(halls.get(session.get("HallID")));
+        tr.append(hallTd);
+
+        const unsoldTd = document.createElement("td");
+        unsoldTd.append(session.get("UnsoldTickets"));
+        tr.append(unsoldTd);
+
+        const linksTd = document.createElement("td");
+
+        const editLink = document.createElement("a");
+        editLink.setAttribute("data-id", session.get("ID"));
+        editLink.setAttribute("class", "btn");
+        editLink.append("Изменить");
+        editLink.addEventListener("click", e => {
+            e.preventDefault();
+            GetSession(session.get("ID"));
+        });
+        linksTd.append(editLink);
+
+        const removeLink = document.createElement("a");
+        removeLink.setAttribute("data-id", session.get("ID"));
+        removeLink.setAttribute("class", "btn");
+        removeLink.append("Удалить");
+        removeLink.addEventListener("click", e => {
+            e.preventDefault();
+            DeleteSession(session.get("ID"));
+        });
+        linksTd.append(removeLink);
+
+        tr.appendChild(linksTd);
+
+        return tr;
+    }
+
+    document.getElementById("resetBtn").addEventListener("click", e => {
+        e.preventDefault();
+        reset();
+    });
+
+    addForm.addEventListener("submit", e => {
+        e.preventDefault();
+        editHeader.textContent = "Создание сеанса";
+
+        addForm.hidden = true;
+        form.elements["UnselectBtn"].hidden = false;
+        editMenu.hidden = false;
+    });
+
+    form.addEventListener("submit", e => {
+        e.preventDefault();
+
+        const id = form.elements["id"].value;
+        const film = form.elements["FilmName"].value;
+        const date = form.elements["DateTime"].value;
+        const duration = form.elements["Duration"].value;
+        const hallID = form.elements["Hall"].value;
+
+        if(id === 0)
+            CreateSession(film, date, duration, hallID);
+        else
+            EditSession(id, film, date, duration, hallID);
+
+        reset();
+    });
+
+    GetHalls();
+    GetSessions();
+</script>
