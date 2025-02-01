@@ -13,6 +13,8 @@ app.engine("hbs", expressHbs.engine(hbsEngine))
 app.set("view engine", "hbs");
 hbs.registerPartials(__dirname + partialsDir);
 
+app.use(express.json());
+
 app.use(homeWay, homeRouter);
 app.use(apiWay, apiRouter);
 app.use(seansWay, seansRouter);
