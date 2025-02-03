@@ -52,7 +52,7 @@
             const result = await res.json();
             result.forEach(hall => {
                 halls[hall["ID"]] = hall["Name"];
-                form.elements["Hall"].options[form.elements["Hall"].options.length] = new Option(hall["Name"], hall["ID"]);
+                select.options[select.options.length] = new Option(hall["Name"], hall["ID"]);
             });
         }
     }
@@ -170,6 +170,13 @@
         tr.append(unsoldTd);
 
         const linksTd = document.createElement("td");
+
+        const ticketLink = document.createElement("a");
+        ticketLink.setAttribute("data-id", session["ID"]);
+        ticketLink.setAttribute("class", "btn");
+        ticketLink.setAttribute("href", "{{ticketWay}}/" + session["ID"]);
+        ticketLink.append("Брони");
+        linksTd.append(ticketLink);
 
         const editLink = document.createElement("a");
         editLink.setAttribute("data-id", session["ID"]);
