@@ -4,6 +4,7 @@ module.exports.homeWay = "/";
 module.exports.apiWay = "/api";
 module.exports.apiHalls = "/halls";
 module.exports.apiSessions = "/sessions";
+module.exports.apiTickets = "/tickets";
 module.exports.seansWay = "/seans";
 module.exports.ticketWay = "/ticket";
 

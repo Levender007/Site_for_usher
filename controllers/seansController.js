@@ -1,4 +1,4 @@
-const {homeWay, apiWay, apiHalls, apiSessions} = require('../conf.js');
+const {homeWay, apiWay, apiHalls, apiSessions, ticketWay} = require('../conf.js');
 
 exports.homePage = function (_, res) {
     res.render('seansPage.hbs', {
@@ -6,6 +6,7 @@ exports.homePage = function (_, res) {
         homeWay: homeWay,
         apiWay: apiWay,
         apiHalls: apiHalls,
-        apiSessions: apiSessions
+        apiSessions: apiSessions,
+        ticketWay: ticketWay
     })
 }

@@ -1,0 +1,236 @@
+<div id ="EditMenu" hidden>
+    <h2 id="EditHeader"></h2>
+    <form name="EditForm" action="" method="post">
+        <input type="hidden" name="id" id="id" value="0">
+        <p>
+            <label for="FIO">ФИО: </label>
+            <input type="text" name="FIO" id="FIO">
+        </p>
+        <p>
+            <label for="ticketsCount">Кол-во билетов: </label>
+            <input type="number" name="ticketsCount" id="ticketsCount" min="1" step="1">
+        </p>
+        <p>
+            <button type="submit" id="SubmitBtn">Отправить</button>
+            <button type="reset" id="ResetBtn">Сбросить</button>
+            <button name="UnselectBtn" id="UnselectBtn">Снять выбор</button>
+        </p>
+    </form>
+</div>
+<form name="RebaseForm" action="" method="post" hidden>
+    <p>
+        <label for="session">Дата другого сеанса: </label>
+        <select id="session" size="1"></select>
+    </p>
+    <p>
+        <button type="submit" name="RebaseBtn" id="RebaseBtn">Перенести</button>
+    </p>
+</form>
+<form name="AddForm" action="" method="get">
+    <button id="AddBtn">Добавить бронь</button>
+</form>
+<table>
+    <thead><tr><th>ФИО</th><th>Кол-во билетов</th></tr></thead>
+    <tbody></tbody>
+</table>
+
+<script>
+    const editMenu = document.getElementById("EditMenu");
+    const editHeader = document.getElementById("EditHeader");
+    const rebaseForm = document.forms["RebaseForm"];
+    const addForm = document.forms["AddForm"];
+    const form = document.forms["EditForm"];
+    const select = document.querySelector("select");
+    const tbody = document.querySelector("tbody");
+
+    async function GetSessions() {
+        const today = new Date();
+        const res = await fetch("{{apiWay}}{{apiSessions}}/fd/" + today.toISOString() + "/{{sessionID}}", {
+            method: "GET",
+            headers: { "Accept": "application/json" }
+        });
+        if (res.ok === true) {
+            const sessions = await res.json();
+            sessions.forEach(session => {
+                const date = new Date(session["Date"]);
+                select.options[select.options.length] = new Option(date.toString(), session["ID"]);
+            });
+        }
+    }
+
+    async function GetTickets() {
+        const res = await fetch("{{apiWay}}{{apiTickets}}/s/{{sessionID}}", {
+            method: "GET",
+            headers: { "Accept": "application/json" }
+        });
+        if (res.ok === true) {
+            const tickets = await res.json();
+            tickets.forEach(ticket => {
+                tbody.append(row(ticket));
+            });
+        }
+    }
+
+    async function GetTicket(id) {
+        const res = await fetch("{{apiWay}}{{apiTickets}}/t/" + id, {
+            method: "GET",
+            headers: { "Accept": "application/json" }
+        });
+        if (res.ok === true) {
+            const ticket = await res.json();
+
+            editHeader.textContent = "Редактирование брони";
+
+            form.elements["id"].value = ticket["ID"];
+
+            addForm.hidden = true;
+            rebaseForm.hidden = false;
+            editMenu.hidden = false;
+        }
+    }
+
+    async function CreateTicket(fio, ticketsCount) {
+        const res = await fetch("{{apiWay}}{{apiTickets}}", {
+            method: "POST",
+            headers: { "Accept": "application/json", "Content-Type": "application/json" },
+            body: JSON.stringify({
+                fio: fio,
+                ticketsCount: ticketsCount,
+                seansID: {{seansID}}
+            })
+        });
+        if (res.ok === true) {
+            while(tbody.firstChild) {
+                tbody.removeChild(tbody.firstChild);
+            }
+            await GetTickets();
+        }
+    }
+
+    async function EditTicket(id, fio, ticketsCount) {
+        const res = await fetch("{{apiWay}}{{apiTickets}}/t/" + id, {
+            method: "PUT",
+            headers: { "Accept": "application/json", "Content-Type": "application/json" },
+            body: JSON.stringify({
+                fio: fio,
+                ticketsCount: ticketsCount
+            })
+        });
+        if (res.ok === true) {
+            while(tbody.firstChild) {
+                tbody.removeChild(tbody.firstChild);
+            }
+            await GetTickets();
+        }
+    }
+
+    async function DeleteTicket(id) {
+        const res = await fetch("{{apiWay}}{{apiTickets}}/t/" + id, {
+            method: "DELETE",
+            headers: { "Accept": "application/json" }
+        });
+        if (res.ok === true) {
+            document.querySelector(`tr[data-rowid="${id}"]`).remove();
+        }
+    }
+
+    async function RebaseTicket(id, newSeans) {
+        const res = await fetch("{{apiWay}}{{apiTickets}}/t/" + id + "/ns/" + newSeans, {
+            method: "PUT",
+            headers: { "Accept": "application/json" }
+        });
+        if (res.ok === true) {
+            document.querySelector(`tr[data-rowid="${id}"]`).remove();
+        }
+    }
+
+    function reset() {
+        addForm.hidden = false;
+        rebaseForm.hidden = true;
+        editMenu.hidden = true;
+        form.elements["id"].value = 0;
+        form.reset();
+        editHeader.textContent = "";
+    }
+
+    function row(ticket) {
+        const tr = document.createElement("tr");
+        tr.setAttribute("data-rowid", ticket["ID"]);
+
+        const fioTd = document.createElement("td");
+        fioTd.append(ticket["FIO"]);
+        tr.append(fioTd);
+
+        const countTd = document.createElement("td");
+        countTd.append(ticket["Tickets"]);
+        tr.append(countTd);
+
+        const linksTd = document.createElement("td");
+
+        const editLink = document.createElement("a");
+        editLink.setAttribute("data-id", ticket["ID"]);
+        editLink.setAttribute("class", "btn");
+        editLink.setAttribute("href", "");
+        editLink.append("Изменить");
+        editLink.addEventListener("click", e => {
+            e.preventDefault();
+            GetTicket(ticket["ID"]);
+        });
+        linksTd.append(editLink);
+
+        const removeLink = document.createElement("a");
+        removeLink.setAttribute("data-id", ticket["ID"]);
+        removeLink.setAttribute("class", "btn");
+        removeLink.setAttribute("href", "");
+        removeLink.append("Удалить");
+        removeLink.addEventListener("click", e => {
+            e.preventDefault();
+            DeleteTicket(ticket["ID"]);
+        });
+        linksTd.append(removeLink);
+
+        tr.appendChild(linksTd);
+
+        return tr;
+    }
+
+    document.getElementById("AddBtn").addEventListener("click", e => {
+        e.preventDefault();
+        editHeader.textContent = "Создание брони";
+
+        addForm.hidden = true;
+        editMenu.hidden = false;
+    });
+
+    document.getElementById("UnselectBtn").addEventListener("click", e => {
+        e.preventDefault();
+        reset();
+    });
+
+    form.addEventListener("submit", e => {
+        e.preventDefault();
+
+        const id = form.elements["id"].value;
+        const fio = form.elements["FIO"].value;
+        const count = form.elements["ticketsCount"].value;
+
+        if(id == 0)
+            CreateTicket(fio, count);
+        else
+            EditTicket(id, fio, count);
+
+        reset();
+    });
+
+    rebaseForm.addEventListener("submit", e => {
+        e.preventDefault();
+        const id = form.elements["id"].value;
+        const newSeans = rebaseForm.elements["session"].value;
+
+        RebaseTicket(id, newSeans);
+
+        reset();
+    });
+
+    GetTickets();
+</script>
