@@ -58,6 +58,22 @@ exports.CreateSession = function (req, res) {
         });
 }
 
+exports.GetSameSessions = function (req, res) {
+    const conn = mysql.createConnection(dbConnect).promise();
+    const DateTime = new Date(req.params.date);
+    const sessionID = req.params.idForName;
+    const sql = "SELECT * FROM sessions WHERE Date > '?-?-? ?:?:?' and Film = (SELECT Film from sessions WHERE ID = ?)";
+    const param = [DateTime.getFullYear(), DateTime.getMonth() + 1, DateTime.getDate(), DateTime.getHours(), DateTime.getMinutes(), DateTime.getSeconds(), sessionID];
+    conn.query(sql, param)
+        .then(([result, _]) => {
+            res.send(result);
+        })
+        .catch(err => {
+            console.log(err);
+            res.status(500).send("Internal Server Error");
+        });
+}
+
 exports.GetSession = function (req, res) {
     const id = [req.params.id];
     const conn = mysql.createConnection(dbConnect).promise();
@@ -98,6 +114,146 @@ exports.GetHalls = function (_, res) {
     conn.query(sql)
         .then(result => {
             res.send(result[0]);
+        })
+        .catch(err => {
+            console.log(err);
+            res.status(500).send("Internal Server Error");
+        });
+}
+
+exports.DeleteTicket = function (req, res) {
+    const conn = mysql.createConnection(dbConnect).promise();
+    const sql = "DELETE FROM reservations WHERE ID = ?"
+    const param = [req.params.id];
+    conn.query(sql, param)
+        .then(([result, _]) => {
+            if (result["affectedRows"] > 0) {
+                res.send("Reservation Deleted");
+            }
+            else {
+                res.status(500).send("Reservation Not Deleted");
+            }
+        })
+        .catch(err => {
+            console.log(err);
+            res.status(500).send("Internal Server Error");
+        });
+}
+
+exports.UpdateTicket = function (req, res) {
+    const conn = mysql.createConnection(dbConnect).promise();
+    const sql = "UPDATE reservations SET Tickets = ?, FIO = ? WHERE ID = ?";
+    const param = [req.body.ticketsCount, req.body.fio, req.params.id];
+    conn.query(sql, param)
+        .then(([result, _]) => {
+            if (result["affectedRows"] > 0) {
+                res.send("Reservation Updated");
+            }
+            else {
+                res.status(500).send("Reservation Not Updated");
+            }
+        })
+        .catch(err => {
+            console.log(err);
+            res.status(500).send("Internal Server Error");
+        });
+}
+
+exports.CreateTicket = function (req, res) {
+    const conn = mysql.createConnection(dbConnect).promise();
+    let sql = "SELECT ID FROM reservations WHERE SessionID = ? and FIO = ?";
+    let param = [req.body.seansID, req.body.fio];
+    conn.query(sql, param)
+        .then(([result, _]) => {
+            if (result.length > 0) {
+                sql = "UPDATE reservations SET Tickets = Tickets + ? WHERE ID = ?";
+                param[0] = req.body.ticketsCount;
+                param[1] = result[0]["ID"];
+                conn.query(sql, param)
+                    .then(([result2, _]) => {
+                        if (result2["affectedRows"] > 0) {
+                            res.send("Reservation Updated");
+                        }
+                        else {
+                            res.status(500).send("Reservation Not Updated");
+                        }
+                    })
+                    .catch(err => {
+                        console.log(err);
+                        res.status(500).send("Internal Server Error");
+                    });
+            }
+            else {
+                sql = "INSERT INTO reservations (Tickets, FIO, SessionID) VALUES (?, ?, ?)"
+                param[0] = req.body.ticketsCount;
+                param[1] = req.body.fio;
+                param[2] = req.body.seansID;
+                conn.query(sql, param)
+                    .then(([result, _]) => {
+                        if (result["affectedRows"] > 0) {
+                            res.send("Reservation Created");
+                        }
+                        else {
+                            res.status(500).send("Reservation Not Created");
+                        }
+                    })
+                    .catch(err => {
+                        console.log(err);
+                        res.status(500).send("Internal Server Error");
+                    });
+            }
+        })
+        .catch(err => {
+            console.log(err);
+            res.status(500).send("Internal Server Error");
+        });
+}
+
+exports.GetTicket = function (req, res) {
+    const conn = mysql.createConnection(dbConnect).promise();
+    const sql = "SELECT * FROM reservations WHERE ID = ?";
+    const param = [req.params.id];
+    conn.query(sql, param)
+        .then(([result, _]) => {
+            if (result.length > 0) {
+                res.send(result[0]);
+            }
+            else {
+                res.status(404).send("No such reservation");
+            }
+        })
+        .catch(err => {
+            console.log(err);
+            res.status(500).send("Internal Server Error");
+        });
+}
+
+exports.GetTickets = function (req, res) {
+    const conn = mysql.createConnection(dbConnect).promise();
+    const sql = "SELECT * FROM reservations WHERE SessionID = ?";
+    const param = [req.params.sessionID];
+    conn.query(sql, param)
+        .then(([result, _]) => {
+            res.send(result);
+        })
+        .catch(err => {
+            console.log(err);
+            res.status(500).send("Internal Server Error");
+        });
+}
+
+exports.RebaseTicket = function (req, res) {
+    const conn = mysql.createConnection(dbConnect).promise();
+    const sql = "UPDATE reservations SET SessionID = ? WHERE ID = ?";
+    const param = [req.params.newSeans, req.params.id];
+    conn.query(sql, param)
+        .then(([result, _]) => {
+            if (result["affectedRows"] > 0) {
+                res.send("Reservation Rebased");
+            }
+            else {
+                res.status(500).send("Reservation Not Rebased");
+            }
         })
         .catch(err => {
             console.log(err);
