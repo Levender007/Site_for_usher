@@ -45,7 +45,7 @@
 
     async function GetSessions() {
         const today = new Date();
-        const res = await fetch("{{apiWay}}{{apiSessions}}/fd/" + today.toISOString() + "/{{sessionID}}", {
+        const res = await fetch("{{apiWay}}{{apiSessions}}/fk/" + today.toISOString() + "/{{seansID}}", {
             method: "GET",
             headers: { "Accept": "application/json" }
         });
@@ -59,7 +59,7 @@
     }
 
     async function GetTickets() {
-        const res = await fetch("{{apiWay}}{{apiTickets}}/s/{{sessionID}}", {
+        const res = await fetch("{{apiWay}}{{apiTickets}}/s/{{seansID}}", {
             method: "GET",
             headers: { "Accept": "application/json" }
         });
@@ -232,5 +232,6 @@
         reset();
     });
 
+    GetSessions();
     GetTickets();
 </script>
