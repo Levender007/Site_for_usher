@@ -62,8 +62,8 @@ exports.GetSameSessions = function (req, res) {
     const conn = mysql.createConnection(dbConnect).promise();
     const DateTime = new Date(req.params.date);
     const sessionID = req.params.idForName;
-    const sql = "SELECT * FROM sessions WHERE Date > '?-?-? ?:?:?' and Film = (SELECT Film from sessions WHERE ID = ?)";
-    const param = [DateTime.getFullYear(), DateTime.getMonth() + 1, DateTime.getDate(), DateTime.getHours(), DateTime.getMinutes(), DateTime.getSeconds(), sessionID];
+    const sql = "SELECT * FROM sessions WHERE Date > '?-?-? ?:?:?' and Film = (SELECT Film from sessions WHERE ID = ?) and ID != ? ORDER BY Date, HallID";
+    const param = [DateTime.getFullYear(), DateTime.getMonth() + 1, DateTime.getDate(), DateTime.getHours(), DateTime.getMinutes(), DateTime.getSeconds(), sessionID, sessionID];
     conn.query(sql, param)
         .then(([result, _]) => {
             res.send(result);
@@ -96,7 +96,7 @@ exports.GetSession = function (req, res) {
 exports.GetSessions = function (req, res) {
     const conn = mysql.createConnection(dbConnect).promise();
     const DateTime = new Date(req.params.date);
-    const sql = "SELECT * FROM sessions WHERE Date > '?-?-? ?:?:?'";
+    const sql = "SELECT * FROM sessions WHERE Date > '?-?-? ?:?:?' ORDER BY Date, HallID";
     const date = [DateTime.getFullYear(), DateTime.getMonth() + 1, DateTime.getDate(), DateTime.getHours(), DateTime.getMinutes(), DateTime.getSeconds()];
     conn.query(sql, date)
         .then(result => {
@@ -230,7 +230,7 @@ exports.GetTicket = function (req, res) {
 
 exports.GetTickets = function (req, res) {
     const conn = mysql.createConnection(dbConnect).promise();
-    const sql = "SELECT * FROM reservations WHERE SessionID = ?";
+    const sql = "SELECT * FROM reservations WHERE SessionID = ? ORDER BY FIO";
     const param = [req.params.sessionID];
     conn.query(sql, param)
         .then(([result, _]) => {
