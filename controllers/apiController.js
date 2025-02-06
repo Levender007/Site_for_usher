@@ -1,5 +1,22 @@
 const mysql = require("mysql2");
-const {dbConnect} = require('../conf.js');
+const {dbConnect, M} = require('../conf.js');
+
+async function SessionsHasIntersection (date, duration, hallID, sessionID = 0) {
+    const conn = mysql.createConnection(dbConnect).promise();
+    const sql = "SELECT COUNT(*) as s FROM sessions WHERE HallID = ? and !(addtime(addtime(Date, Duration), ?) < ? or Date > addtime(addtime(?, ?), ?)) and ID != ?";
+    const dat = date.replace("T", " ");
+    const param = [hallID, M, dat, dat, duration, M, sessionID];
+    let res = 0;
+    await conn.query(sql, param)
+        .then(([result, _]) => {
+            res = result[0]["s"] > 0;
+        })
+        .catch((err) => {
+            console.log(err);
+            res = "Error";
+        });
+    return res;
+}
 
 exports.DeleteSession = function (req, res) {
     const conn = mysql.createConnection(dbConnect).promise();
@@ -20,7 +37,16 @@ exports.DeleteSession = function (req, res) {
         });
 }
 
-exports.UpdateSession = function (req, res) {
+exports.UpdateSession = async function (req, res) {
+    const HasIntersection =  await SessionsHasIntersection(req.body.date, req.body.duration, req.body.hallID, req.params.id);
+    if(HasIntersection === "Error") {
+        res.status(500).send("Intersection Check Error");
+        return;
+    }
+    else if(HasIntersection) {
+        res.send("HasIntersection");
+        return;
+    }
     const conn = mysql.createConnection(dbConnect).promise();
     const sql = "UPDATE sessions SET Film = ?, Date = ?, Duration = ?, HallID = ? WHERE ID = ?";
     const param = [req.body.film, req.body.date, req.body.duration, req.body.hallID, req.params.id];
@@ -39,7 +65,16 @@ exports.UpdateSession = function (req, res) {
         });
 }
 
-exports.CreateSession = function (req, res) {
+exports.CreateSession = async function (req, res) {
+    const HasIntersection = await SessionsHasIntersection(req.body.date, req.body.duration, req.body.hallID);
+    if(HasIntersection === "Error") {
+        res.status(500).send("Intersection Check Error");
+        return;
+    }
+    else if(HasIntersection) {
+        res.send("HasIntersection");
+        return;
+    }
     const conn = mysql.createConnection(dbConnect).promise();
     const sql = "INSERT INTO sessions (Film, Date, Duration, HallID, UnsoldTickets) VALUES (?, ?, ?, ?, (SELECT Capacity FROM halls WHERE ID = ?))";
     const param = [req.body.film, req.body.date, req.body.duration, req.body.hallID, req.body.hallID];
