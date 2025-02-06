@@ -14,6 +14,7 @@ app.set("view engine", "hbs");
 hbs.registerPartials(__dirname + partialsDir);
 
 app.use(express.json());
+app.use(express.static("static"));
 
 app.use(homeWay, homeRouter);
 app.use(apiWay, apiRouter);
