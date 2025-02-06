@@ -100,10 +100,16 @@
             })
         });
         if (res.ok === true) {
-            while(tbody.firstChild) {
-                tbody.removeChild(tbody.firstChild);
+            const resStream = await res.text();
+            if(resStream === "TooMuchInOneHands")
+                alert("Превышен лимит биллетов в одни руки");
+            else if (resStream === "NoSpaceInHall")
+                alert("Недостаточно места в зале");
+            else {
+                while (tbody.firstChild)
+                    tbody.removeChild(tbody.firstChild);
+                await GetTickets();
             }
-            await GetTickets();
         }
     }
 
@@ -113,14 +119,22 @@
             headers: { "Accept": "application/json", "Content-Type": "application/json" },
             body: JSON.stringify({
                 fio: fio,
-                ticketsCount: ticketsCount
+                ticketsCount: ticketsCount,
+                seansID: {{seansID}}
             })
         });
         if (res.ok === true) {
-            while(tbody.firstChild) {
-                tbody.removeChild(tbody.firstChild);
+            const resStream = await res.text();
+            if(resStream === "TooMuchInOneHands")
+                alert("Превышен лимит биллетов в одни руки");
+            else if (resStream === "NoSpaceInHall")
+                alert("Недостаточно места в зале");
+            else {
+                while (tbody.firstChild) {
+                    tbody.removeChild(tbody.firstChild);
+                }
+                await GetTickets();
             }
-            await GetTickets();
         }
     }
 
@@ -140,7 +154,12 @@
             headers: { "Accept": "application/json" }
         });
         if (res.ok === true) {
-            document.querySelector(`tr[data-rowid="${id}"]`).remove();
+            const resStream = await res.text();
+            if (resStream === "NoSpaceInHall")
+                alert("Недостаточно места в новом зале");
+            else {
+                document.querySelector(`tr[data-rowid="${id}"]`).remove();
+            }
         }
     }
 

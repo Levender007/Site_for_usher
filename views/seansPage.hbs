@@ -123,8 +123,11 @@
             })
         });
         if (res.ok === true) {
-            if(await res.text() === "HasIntersection")
-                alert("Есть пересечение с другим сеансом или технической паузой")
+            const resStream = await res.text();
+            if(resStream === "HasIntersection")
+                alert("Есть пересечение с другим сеансом или технической паузой");
+            else if (resStream === "NewHallHasNoSpace")
+                alert("В новом зале недостаточно места");
             else {
                 while (tbody.firstChild) {
                     tbody.removeChild(tbody.firstChild);
