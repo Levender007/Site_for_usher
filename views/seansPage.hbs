@@ -100,10 +100,14 @@
             })
         });
         if (res.ok === true) {
-            while(tbody.firstChild) {
-                tbody.removeChild(tbody.firstChild);
+            if(await res.text() === "HasIntersection")
+                alert("Есть пересечение с другим сеансом или технической паузой");
+            else {
+                while (tbody.firstChild) {
+                    tbody.removeChild(tbody.firstChild);
+                }
+                await GetSessions();
             }
-            await GetSessions();
         }
     }
 
@@ -119,10 +123,14 @@
             })
         });
         if (res.ok === true) {
-            while(tbody.firstChild) {
-                tbody.removeChild(tbody.firstChild);
+            if(await res.text() === "HasIntersection")
+                alert("Есть пересечение с другим сеансом или технической паузой")
+            else {
+                while (tbody.firstChild) {
+                    tbody.removeChild(tbody.firstChild);
+                }
+                await GetSessions();
             }
-            await GetSessions();
         }
     }
 
