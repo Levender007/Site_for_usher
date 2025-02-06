@@ -8,6 +8,9 @@ module.exports.apiTickets = "/tickets";
 module.exports.seansWay = "/seans";
 module.exports.ticketWay = "/ticket";
 
+module.exports.M = "00:10:00";
+module.exports.N = 5;
+
 module.exports.hbsEngine = {
   layoutsDir: "views/layouts",
   defaultLayout: "defLayout",
